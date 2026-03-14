@@ -1,22 +1,19 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-  // CORS Headers for All Browsers & Origins
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  // 1. CORS Headers (Strictly allowed for all)
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json'); // Telling browser it's JSON
 
-  // Preflight check
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   const { number } = req.query;
+
+  // Your Credits
   const credits = {
     dev: "RANA FAISAL ALI (FTGM)",
     site: "https://ftgmtools.pages.dev",
@@ -24,20 +21,31 @@ module.exports = async (req, res) => {
   };
 
   if (!number) {
-    return res.status(400).json({ error: "Number parameter is missing", credits });
+    const errorRes = JSON.stringify({ status: "error", message: "Number missing", credits }, null, 2);
+    return res.status(400).send(errorRes);
   }
 
   try {
     const response = await axios.get(`https://sim-db-api.fakcloud.tech/?number=${number}`);
-    res.status(200).json({
-      ...response.data,
-      credits
-    });
+    
+    // 2. Formatting the Response (The "Assembled" Way)
+    const finalData = {
+      success: response.data.success || true,
+      number: response.data.number || number,
+      name: response.data.name || "Not Found",
+      cnic: response.data.cnic || "Not Found",
+      address: response.data.address || "Not Found",
+      credits: credits
+    };
+
+    // 3. JSON.stringify(data, null, 2) creates the indented "Pretty" look
+    const prettyJson = JSON.stringify(finalData, null, 2);
+    
+    // Sending as 'send' instead of 'json' to maintain formatting
+    res.status(200).send(prettyJson);
+
   } catch (error) {
-    res.status(500).json({ 
-      error: "Target API Down or Request Failed",
-      details: error.message,
-      credits 
-    });
+    const errorRes = JSON.stringify({ error: "Fetch failed", credits }, null, 2);
+    res.status(500).send(errorRes);
   }
 };
