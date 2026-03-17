@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    // 1. Full CORS Support (No Restrictions)
+    // 1. Set CORS headers to allow all origins and methods
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Preflight (OPTIONS) request handling
+    // Handle OPTIONS request for CORS preflight
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -18,18 +18,17 @@ export default async function handler(req, res) {
 
     if (!query) {
         return res.status(400).json({ 
-            error: "Search query is missing!", 
-            usage: "/api/ytsearch?query=song+name" 
+            error: "Query parameter is required",
+            example: "?query=search_term"
         });
     }
 
     try {
-        // YouTube Search API Endpoint
         const apiUrl = `https://api.siputzx.my.id/api/s/youtube?query=${encodeURIComponent(query)}`;
         const response = await fetch(apiUrl);
         const data = await response.json();
 
-        // 2. Credits & Branding (FTGM Style)
+        // 2. Prepare the response with Credits and Data
         const finalResponse = {
             credits: {
                 developed_by: "Rana Faisal Ali",
@@ -41,14 +40,14 @@ export default async function handler(req, res) {
             results: data
         };
 
-        // 3. Pretty Preview (Browser readable)
+        // 3. Output in "Pretty Preview" format (Indent with 4 spaces)
         res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(JSON.stringify(finalResponse, null, 2));
+        return res.status(200).send(JSON.stringify(finalResponse, null, 4));
 
     } catch (error) {
         return res.status(500).json({ 
-            error: "Failed to fetch YouTube data", 
+            error: "Internal Server Error", 
             message: error.message 
         });
     }
-    }
+}
