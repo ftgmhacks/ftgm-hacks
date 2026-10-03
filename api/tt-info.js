@@ -1,66 +1,68 @@
-const axios = require('axios');
+export default async function handler(req, res) {
+  // Enable CORS headers for cross-origin requests
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-module.exports = async (req, res) => {
-    // 1. Full CORS & Global Browser Access (No Errors)
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*'); 
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  try {
+    // Extract query parameters with defaults if none are provided
+    const { phone = '3114882921', count = '5' } = req.query;
+
+    // Target API URL
+    const targetUrl = `https://smsbombapi-ten.vercel.app/api/send?phone=${encodeURIComponent(phone)}&count=${encodeURIComponent(count)}`;
+
+    // Fetch response from target API
+    const response = await fetch(targetUrl);
     
-    // Set Header for Pretty JSON rendering
-    res.setHeader('Content-Type', 'application/json');
-
-    // Handle Preflight OPTIONS request
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+    if (!response.ok) {
+      return res.status(response.status).json({
+        status: false,
+        message: `Upstream API error: ${response.statusText}`
+      });
     }
 
-    // 2. Extract TikTok Username from query (?username=)
-    const { username } = req.query;
+    const data = await response.json();
 
-    // Your Professional Credits
-    const credits = {
-        dev: "RANA FAISAL ALI (FTGM)",
-        site: "https://ftgmtools.pages.dev",
-        whatsapp: "https://wa.me/923104882921",
-        more: "Search ftgm tools on google"
+    // Remove unwanted developer/group tags from upstream output
+    delete data.dev;
+    delete data.group;
+    delete data.job_id;
+
+    // Construct the customized response with new credits
+    const formattedResponse = {
+      credits: {
+        dev: "Rana Faisal Ali",
+        web: "ftgmtools.pages.dev",
+        join_channel: "https://whatsapp.com/channel/0029VbDQFi9KmCPUDQEwVW2W"
+      },
+      ...data
     };
 
-    if (!username) {
-        const errorRes = JSON.stringify({
-            status: false,
-            message: "Missing 'username' parameter. Example: ?username=mrbeast",
-            credits: credits
-        }, null, 2);
-        return res.status(400).send(errorRes);
-    }
+    // Return pretty-printed JSON preview (2-space indented)
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).send(JSON.stringify(formattedResponse, null, 2));
 
-    try {
-        // 3. Fetch Data from TikTok Stalk API
-        const response = await axios.get(`https://api.siputzx.my.id/api/stalk/tiktok?username=${encodeURIComponent(username)}`);
-        
-        // 4. Structure the Response for Pretty View
-        const finalOutput = {
-            status: response.data.status || true,
-            tiktok_profile: response.data.data || response.data,
-            credits: credits
-        };
-
-        // 5. Convert to Pretty JSON (2 spaces indentation)
-        const prettyData = JSON.stringify(finalOutput, null, 2);
-
-        // Send the formatted response
-        res.status(200).send(prettyData);
-
-    } catch (error) {
-        const fetchError = JSON.stringify({ 
-            status: false,
-            error: "Failed to fetch TikTok data", 
-            message: error.message,
-            credits: credits
-        }, null, 2);
-        res.status(500).send(fetchError);
-    }
-};
-          
+  } catch (error) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).send(
+      JSON.stringify(
+        {
+          status: false,
+          error: "Internal Server Error",
+          details: error.message
+        },
+        null,
+        2
+      )
+    );
+  }
+}
