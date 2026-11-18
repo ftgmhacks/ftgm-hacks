@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTGM Logo</title>
+    <style>
+        /* Reset default margins and center content */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000000;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Responsive video styling with hardware acceleration for smooth playback */
+        video {
+            max-width: 90%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            outline: none;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Calling ftgm-logo.mp4 directly from the root directory ("/ftgm-logo.mp4") -->
+    <video id="logoVideo" src="/ftgm-logo.mp4" autoplay loop muted playsinline preload="auto">
+        Your browser does not support the video tag.
+    </video>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const video = document.getElementById("logoVideo");
+
+            // Ensure smooth playback and handle browser autoplay policies
+            video.playbackRate = 1.0;
+            
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((error) => {
+                    console.warn("Autoplay prevented by browser; waiting for user interaction:", error);
+                    // Fallback: play on first click anywhere on the page
+                    document.body.addEventListener("click", () => {
+                        video.play();
+                    }, { once: true });
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
